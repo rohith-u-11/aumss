@@ -2,6 +2,31 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const admin = require('firebase-admin');
+const fs = require('fs');
+
+// Load local .env file manually if running locally and file exists
+try {
+    const dotenvPath = path.join(__dirname, '.env');
+    if (fs.existsSync(dotenvPath)) {
+        const envData = fs.readFileSync(dotenvPath, 'utf8');
+        envData.split('\n').forEach(line => {
+            const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+            if (match) {
+                const key = match[1];
+                let value = match[2] || '';
+                // Remove surrounding quotes if present
+                if (value.length > 0 && (value.charAt(0) === '"' || value.charAt(0) === "'")) {
+                    value = value.substring(1, value.length - 1);
+                }
+                // Unescape newlines
+                value = value.replace(/\\n/g, '\n');
+                process.env[key] = value;
+            }
+        });
+    }
+} catch (envErr) {
+    console.warn('Unable to parse local .env file:', envErr.message);
+}
 
 const app = express();
 const PORT = 3000;
