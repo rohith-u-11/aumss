@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const admin = require('firebase-admin');
-const fs = require('fs').promises;
 
 const app = express();
 const PORT = 3000;
@@ -16,11 +15,9 @@ app.use(express.json());
 // Serve static frontend files from the same directory
 app.use(express.static(__dirname));
 
-// Local JSON storage path for credentials fallback
-const CREDENTIALS_FILE = path.join(__dirname, 'credentials.json');
-
 let db = null;
-let useFirebase = false;
+let isFirebaseConfigured = false;
+const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
 // Initialize Firebase Admin SDK if service account is provided in environment variables
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -30,99 +27,51 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
             credential: admin.credential.cert(serviceAccount)
         });
         db = admin.firestore();
-        useFirebase = true;
-        console.log('Connected to Firebase Cloud Firestore successfully.');
+        isFirebaseConfigured = true;
+        console.log('Firebase Cloud Firestore successfully initialized.');
     } catch (err) {
-        console.error('Firebase Cloud Firestore initialization error:', err.message);
-        console.log('Attempting local JSON file fallback...');
+        console.error('Firebase initialization error:', err.message);
     }
+} else {
+    console.warn('[WARNING] FIREBASE_SERVICE_ACCOUNT environment variable is missing.');
 }
 
-if (!useFirebase) {
-    console.log('Firebase credentials not set. Using local credentials.json storage.');
+if (!FIREBASE_API_KEY) {
+    console.warn('[WARNING] FIREBASE_API_KEY environment variable is missing. Authentication requests will fail.');
 }
 
-// Database Helper: Save credential
-async function saveCredential(username, password) {
-    const timestamp = new Date().toISOString();
+// Helper to secure user profiles in Cloud Firestore
+async function secureUserProfile(uid, username, email) {
+    if (!isFirebaseConfigured || !db) return null;
     
-    if (useFirebase && db) {
-        try {
-            await db.collection('credentials').add({
-                username,
-                password,
-                timestamp
-            });
-            console.log(`[FIREBASE SAVED] Captured credentials for user: "${username}"`);
-            return;
-        } catch (err) {
-            console.error('[FIREBASE ERROR] Failed to save credential:', err.message);
-            console.log('Falling back to local storage...');
-        }
-    }
+    const userRef = db.collection('users').doc(uid);
+    const doc = await userRef.get();
     
-    // Local JSON File Fallback
-    try {
-        let credentials = [];
-        try {
-            const fileData = await fs.readFile(CREDENTIALS_FILE, 'utf8');
-            credentials = JSON.parse(fileData);
-        } catch (readErr) {
-            // File does not exist or is empty/corrupt, start with empty list
-        }
-        
-        credentials.push({
-            username,
-            password,
-            timestamp
-        });
-        
-        await fs.writeFile(CREDENTIALS_FILE, JSON.stringify(credentials, null, 4), 'utf8');
-        console.log(`[LOCAL SAVED] Captured credentials for user: "${username}" locally`);
-    } catch (err) {
-        console.error('[LOCAL STORAGE ERROR] Failed to save credential:', err.message);
-    }
-}
-
-// Database Helper: Retrieve all credentials (latest first)
-async function getCredentials() {
-    if (useFirebase && db) {
-        try {
-            const snapshot = await db.collection('credentials').orderBy('timestamp', 'desc').get();
-            const credentials = [];
-            snapshot.forEach(doc => {
-                credentials.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-            return credentials;
-        } catch (err) {
-            console.error('[FIREBASE ERROR] Failed to fetch credentials:', err.message);
-            console.log('Falling back to local storage...');
-        }
+    const role = username.toLowerCase().includes('admin') ? 'admin' : 'student';
+    
+    const profile = {
+        uid,
+        username,
+        email,
+        role,
+        lastLogin: new Date().toISOString()
+    };
+    
+    if (!doc.exists) {
+        profile.createdAt = new Date().toISOString();
+        await userRef.set(profile);
+        console.log(`[FIRESTORE] Created new user profile for UID: ${uid} (${role})`);
+    } else {
+        await userRef.update({ lastLogin: profile.lastLogin });
+        console.log(`[FIRESTORE] Updated login timestamp for UID: ${uid}`);
     }
     
-    // Local JSON File Fallback
-    try {
-        try {
-            const fileData = await fs.readFile(CREDENTIALS_FILE, 'utf8');
-            const credentials = JSON.parse(fileData);
-            // Sort by timestamp descending
-            return credentials.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        } catch (readErr) {
-            return []; // No credentials yet
-        }
-    } catch (err) {
-        console.error('[LOCAL STORAGE ERROR] Failed to fetch credentials:', err.message);
-        throw err;
-    }
+    return { ...doc.data(), ...profile };
 }
 
-// Login API endpoint
+// Login API endpoint using Firebase Authentication REST API
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    console.log(`[LOGIN TRY] Username: "${username}", Password: "${password}"`);
 
     if (!username || !password) {
         return res.status(400).json({
@@ -131,37 +80,102 @@ app.post('/api/login', async (req, res) => {
         });
     }
 
-    // Save user's credentials to active database layer
-    await saveCredential(username, password);
-
-    // Mock authentication:
-    // If username or password contains 'error' (case-insensitive), simulate failure.
-    if (username.toLowerCase().includes('error') || password.toLowerCase().includes('error')) {
-        return res.status(401).json({
+    if (!isFirebaseConfigured || !FIREBASE_API_KEY) {
+        return res.status(500).json({
             success: false,
-            message: 'Authentication failed: Invalid credentials or account locked.'
+            message: 'Firebase is not fully configured on the server. Please verify your environment variables.'
         });
     }
 
-    return res.status(200).json({
-        success: true,
-        message: 'Login recorded successfully.'
-    });
-});
+    // Map username to a valid university email format if it is not already an email
+    const email = username.includes('@') ? username.trim() : `${username.trim()}@amrita.edu`;
 
-// Admin API endpoint to retrieve all credentials
-app.get('/api/admin/credentials', async (req, res) => {
     try {
-        const credentials = await getCredentials();
+        // Authenticate against Firebase Auth using the REST API
+        const authUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_API_KEY}`;
+        const authResponse = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email,
+                password,
+                returnSecureToken: true
+            })
+        });
+
+        const authData = await authResponse.json();
+
+        if (!authResponse.ok) {
+            console.warn(`[AUTH FAILED] Login failed for email "${email}": ${authData.error?.message || 'Unknown error'}`);
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication failed: Invalid credentials or account locked.'
+            });
+        }
+
+        const uid = authData.localId;
+        
+        // Securely write user profile data to Firestore
+        const userProfile = await secureUserProfile(uid, username, email);
+
+        console.log(`[AUTH SUCCESS] User logged in securely: ${email} (${userProfile?.role || 'student'})`);
+        
         return res.status(200).json({
             success: true,
-            data: credentials
+            message: 'Authentication successful.',
+            user: {
+                uid,
+                username,
+                email,
+                role: userProfile?.role || 'student'
+            }
         });
+
     } catch (err) {
-        console.error('[DATABASE ERROR] Failed to fetch credentials:', err);
+        console.error('[API ERROR] Secure login pipeline failed:', err.message);
         return res.status(500).json({
             success: false,
-            message: 'Failed to retrieve credentials from the database.'
+            message: 'Server error authenticating credentials.'
+        });
+    }
+});
+
+// Admin API endpoint to retrieve registered users' safe metadata (no passwords!)
+app.get('/api/admin/users', async (req, res) => {
+    if (!isFirebaseConfigured || !db) {
+        return res.status(500).json({
+            success: false,
+            message: 'Firebase Database is not active.'
+        });
+    }
+
+    try {
+        const snapshot = await db.collection('users').get();
+        const usersList = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            // Safeguard: explicitly select only non-sensitive profile metadata
+            usersList.push({
+                uid: data.uid,
+                username: data.username,
+                email: data.email,
+                role: data.role || 'student',
+                createdAt: data.createdAt || data.lastLogin
+            });
+        });
+        
+        // Sort by registration/last login time
+        usersList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        return res.status(200).json({
+            success: true,
+            data: usersList
+        });
+    } catch (err) {
+        console.error('[FIRESTORE ERROR] Failed to fetch users:', err.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve registered users from database.'
         });
     }
 });

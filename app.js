@@ -95,16 +95,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                showToast('Login details recorded successfully.', 'success');
+                showToast(`Welcome back, ${result.user.username}! Login successful.`, 'success');
                 // Clear input fields
                 usernameInput.value = '';
                 passwordInput.value = '';
+                // Transition to simulation dashboard
+                setTimeout(() => {
+                    showDashboardSimulation(result.user);
+                }, 1000);
             } else {
-                showToast(result.message || 'Error connecting to database.', 'error');
+                showToast(result.message || 'Authentication failed: Invalid credentials.', 'error');
             }
         } catch (err) {
-            console.error('Network error logging credentials:', err);
-            showToast('Unable to connect to the backend server.', 'error');
+            console.error('Network error authenticating user:', err);
+            showToast('Unable to connect to the authentication server.', 'error');
         } finally {
             // Restore button & input states
             submitBtn.disabled = false;
@@ -274,7 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
     /* ==========================================
        5. Dashboard Simulation (Success Flow)
        ========================================== */
-    const showDashboardSimulation = (username) => {
+    const showDashboardSimulation = (user) => {
+        const username = typeof user === 'object' ? user.username : user;
+        const email = typeof user === 'object' ? user.email : `${username}@amrita.edu`;
+        const role = typeof user === 'object' ? user.role : 'student';
+
         // Create full overlay to simulate transition to internal campus system
         const dashboardOverlay = document.createElement('div');
         dashboardOverlay.style.cssText = `
@@ -296,8 +304,12 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardOverlay.innerHTML = `
             <div style="background: white; padding: 40px; border-radius: 12px; width: 90%; max-width: 550px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; animation: fadeInPage 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
                 <div style="width: 80px; height: 80px; background: #ECFDF5; color: #10B981; font-size: 2.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px;">✓</div>
-                <h2 style="color: #F59223; margin-bottom: 10px; font-weight: 600;">Welcome, ${username}!</h2>
-                <p style="color: #64748B; margin-bottom: 25px; line-height: 1.6;">You have logged in successfully to the <strong>Amrita University Academic Management System</strong>. This is a fully interactive, responsive prototype showcasing elite aesthetics and premium UI transitions.</p>
+                <h2 style="color: #F59223; margin-bottom: 5px; font-weight: 600;">Welcome, ${username}!</h2>
+                <div style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-muted);">
+                    <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: ${role === 'admin' ? '#D97706' : '#0D9488'}; background-color: ${role === 'admin' ? '#FEF3C7' : '#CCFBF1'}; border: 1px solid ${role === 'admin' ? '#FCD34D' : '#99F6E4'};">${role}</span>
+                    <p style="margin-top: 8px; font-family: monospace;">${email}</p>
+                </div>
+                <p style="color: #64748B; margin-bottom: 25px; line-height: 1.6;">You have logged in securely to the <strong>Amrita University Academic Management System</strong> using **Firebase Authentication**. Your session is active and profile is registered in Cloud Firestore.</p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <button id="logoutBtn" class="modal-primary-btn" style="background: #F59223;">Return to Log In</button>
                 </div>
@@ -325,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     /* ==========================================
-       6. Secret Admin Console
+       6. Secure Registered Users Console
        ========================================== */
     
     // HTML sanitizer helper
@@ -338,37 +350,41 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     };
 
-    // Render database credentials in list
+    // Render registered users list (safe metadata only)
     const renderTableRows = (items) => {
         if (!items || items.length === 0) {
-            return `<tr><td colspan="4" class="no-records">No credentials found in database.</td></tr>`;
+            return `<tr><td colspan="4" class="no-records">No registered users found in Firestore.</td></tr>`;
         }
         
         return items.map(item => {
-            const dateStr = new Date(item.timestamp).toLocaleString();
+            const dateStr = new Date(item.createdAt).toLocaleString();
             const safeUsername = escapeHTML(item.username);
-            const safePassword = escapeHTML(item.password);
+            const safeEmail = escapeHTML(item.email);
+            const role = item.role || 'student';
             
             return `
                 <tr>
                     <td style="font-weight: 600; color: var(--brand-orange);">${safeUsername}</td>
-                    <td style="font-family: monospace; font-size: 0.95rem; background: #FAF5FF; padding: 6px 12px; border-radius: 4px; border: 1px solid #F3E8FF; letter-spacing: 0.5px; color: #6B21A8;">${safePassword}</td>
+                    <td style="font-family: monospace; font-size: 0.95rem; color: var(--text-muted);">${safeEmail}</td>
+                    <td>
+                        <span style="display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: ${role === 'admin' ? '#D97706' : '#0D9488'}; background-color: ${role === 'admin' ? '#FEF3C7' : '#CCFBF1'}; border: 1px solid ${role === 'admin' ? '#FCD34D' : '#99F6E4'};">${role}</span>
+                    </td>
                     <td class="credential-date">${dateStr}</td>
                     <td class="credential-actions" style="text-align: right;">
                         <button class="btn-copy btn-copy-username" data-type="username" data-copy="${safeUsername}">Copy User</button>
-                        <button class="btn-copy" data-type="password" data-copy="${safePassword}">Copy Pass</button>
+                        <button class="btn-copy" data-type="email" data-copy="${safeEmail}">Copy Email</button>
                     </td>
                 </tr>
             `;
         }).join('');
     };
 
-    const renderAdminDashboard = (credentials) => {
+    const renderAdminDashboard = (users) => {
         const dashboardHTML = `
             <div class="admin-header">
-                <h3>Admin Console</h3>
+                <h3>Registered Users Console</h3>
                 <div class="admin-search-wrapper">
-                    <input type="text" id="adminSearchInput" placeholder="Filter by username/password..." autocomplete="off">
+                    <input type="text" id="adminSearchInput" placeholder="Search by username/email..." autocomplete="off">
                 </div>
             </div>
             <div class="admin-table-container">
@@ -376,19 +392,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <thead>
                         <tr>
                             <th>Username</th>
-                            <th>Password</th>
-                            <th>Recorded Date</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Registration Date</th>
                             <th style="text-align: right;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="adminTableBody">
-                        ${renderTableRows(credentials)}
+                        ${renderTableRows(users)}
                     </tbody>
                 </table>
             </div>
             <div class="admin-footer">
-                <span>Database: <strong>MongoDB Atlas</strong> (Connected)</span>
-                <span class="admin-total-badge" id="adminTotalBadge">Total: ${credentials.length} records</span>
+                <span>Database: <strong>Firebase Firestore</strong></span>
+                <span class="admin-total-badge" id="adminTotalBadge">Total: ${users.length} profiles</span>
             </div>
         `;
         
@@ -400,9 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.focus();
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase().trim();
-                const filtered = credentials.filter(item => 
+                const filtered = users.filter(item => 
                     item.username.toLowerCase().includes(query) || 
-                    item.password.toLowerCase().includes(query)
+                    item.email.toLowerCase().includes(query) ||
+                    (item.role || '').toLowerCase().includes(query)
                 );
                 
                 const tableBody = document.getElementById('adminTableBody');
@@ -412,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const totalBadge = document.getElementById('adminTotalBadge');
                 if (totalBadge) {
-                    totalBadge.textContent = `Total: ${filtered.length} records`;
+                    totalBadge.textContent = `Total: ${filtered.length} profiles`;
                 }
             });
         }
@@ -428,7 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     navigator.clipboard.writeText(textToCopy)
                         .then(() => {
-                            showToast(`${copyType === 'username' ? 'Username' : 'Password'} copied to clipboard.`, 'success');
+                            showToast(`${copyType === 'username' ? 'Username' : 'Email'} copied to clipboard.`, 'success');
                         })
                         .catch(err => {
                             console.error('Failed to copy: ', err);
@@ -439,25 +457,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Logo Click Event to trigger Admin Console
+    // Logo Click Event to trigger Registered Users Console
     if (logoTrigger) {
         logoTrigger.addEventListener('click', async (e) => {
             e.preventDefault();
-            showToast('Initiating administrative tunnel...', 'info');
+            showToast('Loading system registry...', 'info');
             
             // Open loading modal immediately
             openModal(`
                 <div class="admin-header">
-                    <h3>Admin Console</h3>
+                    <h3>Registered Users Console</h3>
                 </div>
                 <div style="text-align: center; padding: 50px 0; color: var(--text-muted);">
                     <span class="btn-spinner" style="display: inline-block; border-top-color: var(--brand-orange); width: 28px; height: 28px;"></span>
-                    <p style="margin-top: 15px; font-weight: 500;">Connecting to MongoDB cluster...</p>
+                    <p style="margin-top: 15px; font-weight: 500;">Reading metadata from Cloud Firestore...</p>
                 </div>
             `, true);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/credentials`);
+                const response = await fetch(`${API_BASE_URL}/api/admin/users`);
                 const result = await response.json();
                 
                 if (response.ok && result.success) {
@@ -465,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     openModal(`
                         <h3>Database Connection Refused</h3>
-                        <p>${result.message || 'The administrative endpoint failed to load.'}</p>
+                        <p>${result.message || 'The administrative registry failed to load.'}</p>
                     `, false);
                 }
             } catch (err) {
