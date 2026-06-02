@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amrita University Management System - Sign In</title>
+    <!-- Google Fonts: Outfit for sleek, modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="page-container">
+        <!-- Top Logo and Title Section -->
+        <header class="header-section">
+            <div class="logo-wrapper" id="logoTrigger" role="button" tabindex="0" aria-label="Admin Panel Trigger">
+                <!-- High-fidelity custom SVG replica matching the user's specific logo design -->
+                <svg class="amrita-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <!-- Gradient matching the warm orange circular background -->
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F9A01B" />
+                            <stop offset="100%" stop-color="#E2720D" />
+                        </linearGradient>
+                        
+                        <!-- Translucent black linear gradient for the 45-degree long shadow -->
+                        <linearGradient id="shadowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="rgba(0, 0, 0, 0.18)" />
+                            <stop offset="100%" stop-color="rgba(0, 0, 0, 0)" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Outer orange circle -->
+                    <circle cx="50" cy="50" r="46" fill="url(#logoGrad)" />
+                    
+                    <!-- Inner white ring from the user's screenshot -->
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="#FFFFFF" stroke-width="1.5" opacity="0.8" />
+                    
+                    <!-- Flat 45-degree long shadow shape cast by the white emblem -->
+                    <path d="
+                        M 50 18 L 82 50 L 82 66 L 50 78 L 74 78 L 86 66 L 86 54 L 62 30 Z
+                        M 58 35 L 86 63 L 86 70 L 58 70 Z
+                        M 62 42 L 86 66 L 86 78 L 68 78 Z
+                    " fill="url(#shadowGrad)" />
+                    
+                    <!-- High-fidelity white emblem/insignia paths -->
+                    <g fill="#FFFFFF">
+                        <!-- Top Bud/Drop Shape with clockwise spiral inside -->
+                        <path d="M 50 18 
+                                 C 42 28, 41 36, 45 42 
+                                 C 48 45, 52 45, 55 42 
+                                 C 59 36, 58 28, 50 18 Z 
+                                 M 50 25
+                                 C 54 30, 54 35, 51 38
+                                 C 48 40, 45 38, 45 34
+                                 C 45 31, 48 29, 50 30
+                                 C 51 31, 51 33, 50 33
+                                 C 49 33, 48 32, 48 31
+                                 C 48 30, 49 30, 50 30
+                                 C 51 31, 52 33, 51 35
+                                 C 50 37, 47 37, 46 34
+                                 C 46 31, 49 28, 50 28 Z" />
+                        
+                        <!-- Left flourish wing -->
+                        <path d="M 45 40 
+                                 C 39 36, 32 40, 32 45 
+                                 C 32 48, 36 49, 39 47 
+                                 C 42 45, 44 42, 45 40 Z" />
+                        
+                        <!-- Right flourish wing -->
+                        <path d="M 55 40 
+                                 C 61 36, 68 40, 68 45 
+                                 C 68 48, 64 49, 61 47 
+                                 C 58 45, 56 42, 55 40 Z" />
+                        
+                        <!-- Connecting stem and lower scroll stand -->
+                        <path d="M 49 43 L 51 43 L 51 48 L 49 48 Z" />
+                        <!-- Stylized calligraphic letter "S" / lamp base stand -->
+                        <path d="M 50 48
+                                 C 46 48, 44 51, 44 54
+                                 C 44 58, 49 59, 50 63
+                                 C 51 67, 47 71, 44 71
+                                 C 42 71, 41 69, 42 66
+                                 L 40 66
+                                 C 39 70, 41 73, 44 73
+                                 C 49 73, 53 69, 52 64
+                                 C 51 60, 46 59, 46 55
+                                 C 46 52, 48 50, 50 50
+                                 C 52 50, 54 52, 54 55
+                                 C 54 59, 50 60, 50 63
+                                 L 52 63
+                                 C 52 60, 56 59, 56 55
+                                 C 56 51, 53 48, 50 48 Z" />
+                    </g>
+                </svg>
+            </div>
+            <h1 class="system-title">
+                <span class="title-primary">Amrita University</span>
+                <span class="title-secondary">Management System</span>
+            </h1>
+        </header>
+
+        <!-- Main Sign In Form Card -->
+        <main class="login-card-container">
+            <div class="login-card">
+                <h2 class="card-title">Sign In</h2>
+                
+                <form id="loginForm" novalidate>
+                    <!-- Username Input -->
+                    <div class="input-group">
+                        <input type="text" id="username" name="username" placeholder="Username" required autocomplete="username">
+                        <span class="error-message" id="usernameError">Username is required</span>
+                    </div>
+
+                    <!-- Password Input -->
+                    <div class="input-group">
+                        <input type="password" id="password" name="password" placeholder="Password" required autocomplete="current-password">
+                        <span class="error-message" id="passwordError">Password is required</span>
+                    </div>
+
+                    <!-- Actions Area (Button and OPAC Search link) -->
+                    <div class="action-row">
+                        <button type="submit" id="submitBtn" class="btn-login">
+                            <span class="btn-text">LOGIN</span>
+                            <span class="btn-spinner"></span>
+                        </button>
+                        <a href="#" id="opacLink" class="inline-link">OPAC Search</a>
+                    </div>
+
+                    <!-- Bottom Link Row (Can't access your account?) -->
+                    <div class="secondary-action-row">
+                        <a href="#" id="forgotLink" class="inline-link">Can't access your account?</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- Footer copyright -->
+        <footer class="footer-section">
+            <p class="copyright-text">Copyright &copy; 2021 Amrita Technologies.</p>
+        </footer>
+    </div>
+
+    <!-- Modals for links to make the prototype feel incredibly interactive and alive -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal-card">
+            <button class="modal-close-btn" id="modalCloseBtn" aria-label="Close modal">&times;</button>
+            <div class="modal-content" id="modalContent">
+                <!-- Dynamic Content Loaded by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container for interactive user feedback -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Main JavaScript File -->
+    <script src="app.js"></script>
+</body>
+</html>

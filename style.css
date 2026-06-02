@@ -1,0 +1,726 @@
+/* -------------------------------------------------------------
+   AMRITA UNIVERSITY MANAGEMENT SYSTEM - SIGN IN STYLES
+   Designed with rich, responsive aesthetics and premium transitions
+   ------------------------------------------------------------- */
+
+/* Design System Variables */
+:root {
+    --bg-color: #87D3C1;              /* The exact minty teal background from the screenshot */
+    --brand-orange: #F59223;          /* The vibrant orange used in buttons, logo and headings */
+    --brand-orange-hover: #E07A11;    /* Slightly darker orange for interactive hover states */
+    --brand-title-color: #D47A1F;     /* Precise deeper golden-orange for the logo text */
+    
+    /* Card Elements */
+    --card-bg: #EFF1F4;               /* Very light grey-blue card background from screenshot */
+    --input-bg: #DEE4EC;              /* Light blue-grey input background */
+    --input-focus: #FFFFFF;
+    --input-border: rgba(0, 0, 0, 0.04);
+    --input-border-focus: #F59223;
+    
+    /* Text & Links */
+    --text-main: #1E293B;             /* Sleek slate dark gray for optimal readability */
+    --text-muted: #64748B;            /* Muted slate gray for secondary labels */
+    --link-blue: #0B5B9E;             /* Deep blue for the underlined academic system links */
+    --link-blue-hover: #063C6B;       /* Darker blue for link hover interactions */
+    --footer-text: #4E8E80;           /* Soft dark teal matching the minty background */
+    
+    /* System & Interactions */
+    --error-red: #EF4444;
+    --success-green: #10B981;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-snappy: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* -------------------------------------------------------------
+   1. Reset & Global Styles
+   ------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    overflow-x: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Page Wrapper */
+.page-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+    padding: 24px 16px;
+    animation: fadeInPage 0.8s ease-out;
+}
+
+/* -------------------------------------------------------------
+   2. Header & Logo Section
+   ------------------------------------------------------------- */
+.header-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo-wrapper {
+    margin-bottom: 12px;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+    transition: var(--transition-smooth);
+}
+
+.logo-wrapper:hover {
+    transform: translateY(-4px) scale(1.03);
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.15));
+}
+
+.amrita-logo {
+    width: 86px;
+    height: 86px;
+    display: block;
+}
+
+.system-title {
+    display: flex;
+    flex-direction: column;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--brand-title-color);
+    line-height: 1.25;
+    letter-spacing: 0.1px;
+    text-transform: none;
+}
+
+.title-primary {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.title-secondary {
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+/* -------------------------------------------------------------
+   3. Main Login Card Container
+   ------------------------------------------------------------- */
+.login-card-container {
+    width: 100%;
+    max-width: 440px;
+    margin-bottom: 35px;
+}
+
+.login-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 40px 42px 42px 42px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 
+                0 1px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: var(--transition-smooth);
+}
+
+/* Subtle glass/glow effect on hover */
+.login-card:hover {
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12),
+                0 1px 12px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+    color: var(--brand-orange);
+    font-size: 2.1rem;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 30px;
+    letter-spacing: 0.5px;
+}
+
+/* -------------------------------------------------------------
+   4. Form Elements & Inputs
+   ------------------------------------------------------------- */
+.input-group {
+    position: relative;
+    margin-bottom: 22px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 16px 18px;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 400;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    color: var(--text-main);
+    outline: none;
+    transition: var(--transition-snappy);
+}
+
+/* Exact focus state styling */
+.input-group input:focus {
+    background-color: var(--input-focus);
+    border-color: var(--input-border-focus);
+    box-shadow: 0 0 0 3px rgba(245, 146, 35, 0.15);
+}
+
+/* Placeholder styling */
+.input-group input::placeholder {
+    color: #8C9BA5;
+    opacity: 1;
+    font-weight: 400;
+}
+
+/* Custom error highlight */
+.input-group.has-error input {
+    border-color: var(--error-red);
+    background-color: #FFF5F5;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+.error-message {
+    position: absolute;
+    bottom: -18px;
+    left: 4px;
+    font-size: 0.75rem;
+    color: var(--error-red);
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: var(--transition-snappy);
+    pointer-events: none;
+}
+
+.input-group.has-error .error-message {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* -------------------------------------------------------------
+   5. Buttons & Links (Actions)
+   ------------------------------------------------------------- */
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 28px;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+/* Custom premium LOGIN button */
+.btn-login {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--brand-orange);
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    padding: 12px 28px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition-snappy);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(245, 146, 35, 0.2);
+}
+
+.btn-login:hover {
+    background-color: var(--brand-orange-hover);
+    box-shadow: 0 6px 16px rgba(245, 146, 35, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-login:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px rgba(245, 146, 35, 0.2);
+}
+
+.btn-login:disabled {
+    background-color: #CBD5E1;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Spinner for interactive login submission */
+.btn-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #FFFFFF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 8px;
+}
+
+.btn-login.is-loading .btn-spinner {
+    display: inline-block;
+}
+
+.btn-login.is-loading .btn-text {
+    opacity: 0.8;
+}
+
+/* Inline Links */
+.inline-link {
+    color: var(--link-blue);
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    transition: var(--transition-snappy);
+}
+
+.inline-link:hover {
+    color: var(--link-blue-hover);
+    text-decoration-color: var(--link-blue-hover);
+    transform: translateY(-1px);
+}
+
+/* Lower alignment row for secondary link */
+.secondary-action-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
+/* -------------------------------------------------------------
+   6. Footer Section
+   ------------------------------------------------------------- */
+.footer-section {
+    text-align: center;
+    width: 100%;
+}
+
+.copyright-text {
+    color: var(--footer-text);
+    font-size: 0.9rem;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+}
+
+/* -------------------------------------------------------------
+   7. Premium Interactive Features & Modals
+   ------------------------------------------------------------- */
+/* Modal overlay and card styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.is-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 480px;
+    padding: 36px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+    transform: scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.is-active .modal-card {
+    transform: scale(1);
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition-snappy);
+}
+
+.modal-close-btn:hover {
+    color: var(--text-main);
+    transform: scale(1.1);
+}
+
+.modal-content h3 {
+    color: var(--brand-orange);
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.modal-content p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 18px;
+    font-size: 1rem;
+}
+
+.modal-primary-btn {
+    display: inline-block;
+    background-color: var(--brand-orange);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: var(--transition-snappy);
+    border: none;
+    cursor: pointer;
+}
+
+.modal-primary-btn:hover {
+    background-color: var(--brand-orange-hover);
+}
+
+/* Toast System */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toast {
+    background-color: #FFFFFF;
+    color: var(--text-main);
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 4px solid var(--brand-orange);
+    transform: translateX(120%);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 500;
+}
+
+.toast.is-active {
+    transform: translateX(0);
+}
+
+.toast.toast-success {
+    border-left-color: var(--success-green);
+}
+
+.toast.toast-error {
+    border-left-color: var(--error-red);
+}
+
+/* -------------------------------------------------------------
+   8. Keyframe Animations
+   ------------------------------------------------------------- */
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Shake animation for input validation failures */
+.shake {
+    animation: shakeAnim 0.4s ease-in-out;
+}
+
+@keyframes shakeAnim {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+/* -------------------------------------------------------------
+   9. Media Queries for Perfect Responsiveness
+   ------------------------------------------------------------- */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 30px 24px 32px 24px;
+    }
+    
+    .card-title {
+        font-size: 1.8rem;
+        margin-bottom: 24px;
+    }
+    
+    .action-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        margin-top: 24px;
+    }
+    
+    .btn-login {
+        width: 100%;
+    }
+    
+    .inline-link {
+        font-size: 0.9rem;
+    }
+    
+    .secondary-action-row {
+        justify-content: flex-start;
+        margin-top: 14px;
+    }
+    
+    .amrita-logo {
+        width: 76px;
+        height: 76px;
+    }
+    
+    .system-title {
+        font-size: 1.05rem;
+    }
+}
+
+/* =============================================================
+   10. Secret Admin Panel Styles
+   ============================================================= */
+
+/* Clickable logo style for secret admin trigger */
+.logo-wrapper[role="button"] {
+    cursor: pointer;
+    outline: none;
+}
+
+.logo-wrapper[role="button"]:focus-visible {
+    transform: translateY(-4px) scale(1.03);
+    filter: drop-shadow(0 0 0 3px rgba(245, 146, 35, 0.4));
+}
+
+/* Expanded size for the administrative dashboard */
+.modal-card.admin-modal {
+    max-width: 800px;
+    width: 95%;
+    padding: 30px;
+}
+
+/* Administrative Dashboard UI Components */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #F1F5F9;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+    gap: 16px;
+}
+
+.admin-header h3 {
+    margin-bottom: 0 !important;
+    font-size: 1.6rem !important;
+}
+
+.admin-search-wrapper {
+    position: relative;
+    width: 250px;
+}
+
+.admin-search-wrapper input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #CBD5E1;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: var(--transition-snappy);
+    background: #F8FAFC;
+}
+
+.admin-search-wrapper input:focus {
+    border-color: var(--brand-orange);
+    background: #FFFFFF;
+    box-shadow: 0 0 0 2px rgba(245, 146, 35, 0.1);
+}
+
+.admin-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    background: #FFFFFF;
+    margin-bottom: 15px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+/* Custom scrollbar for database lists */
+.admin-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.admin-table-container::-webkit-scrollbar-track {
+    background: #F1F5F9;
+    border-radius: 4px;
+}
+
+.admin-table-container::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+}
+
+.admin-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+.admin-table th {
+    background-color: #F8FAFC;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 2px solid #E2E8F0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #E2E8F0;
+    color: var(--text-main);
+    word-break: break-all;
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table tr:hover td {
+    background-color: #F8FAFC;
+}
+
+.credential-date {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.credential-actions {
+    white-space: nowrap;
+}
+
+.btn-copy {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border: 1px solid #BFDBFE;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-snappy);
+    margin-right: 6px;
+}
+
+.btn-copy:hover {
+    background: #1D4ED8;
+    color: #FFFFFF;
+    border-color: #1D4ED8;
+}
+
+.btn-copy-username {
+    background: #F0FDF4;
+    color: #16A34A;
+    border: 1px solid #BBF7D0;
+}
+
+.btn-copy-username:hover {
+    background: #16A34A;
+    color: #FFFFFF;
+    border-color: #16A34A;
+}
+
+.no-records {
+    padding: 40px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.admin-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-top: 1px solid #E2E8F0;
+    padding-top: 14px;
+    margin-top: 10px;
+}
+
+.admin-total-badge {
+    background-color: #FFF7ED;
+    color: var(--brand-orange);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    border: 1px solid #FED7AA;
+}
+
+@media (max-width: 600px) {
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .admin-search-wrapper {
+        width: 100%;
+    }
+}
+
