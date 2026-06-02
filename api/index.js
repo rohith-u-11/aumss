@@ -6,7 +6,7 @@ const fs = require('fs');
 
 // Load local .env file manually if running locally and file exists
 try {
-    const dotenvPath = path.join(__dirname, '.env');
+    const dotenvPath = path.join(__dirname, '..', '.env');
     if (fs.existsSync(dotenvPath)) {
         const envData = fs.readFileSync(dotenvPath, 'utf8');
         envData.split('\n').forEach(line => {
@@ -37,8 +37,8 @@ app.use(cors());
 // Parse JSON request bodies
 app.use(express.json());
 
-// Serve static frontend files from the same directory
-app.use(express.static(__dirname));
+// Serve static frontend files from the parent (root) directory
+app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
 let isFirebaseConfigured = false;
