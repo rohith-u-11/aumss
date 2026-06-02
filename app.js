@@ -24,6 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const toastContainer = document.getElementById('toastContainer');
     const logoTrigger = document.getElementById('logoTrigger');
 
+    // HTML sanitizer helper
+    const escapeHTML = (str) => {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    };
+
     /* ==========================================
        1. Input Validation & Error Handling
        ========================================== */
@@ -57,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const username = usernameInput.value.trim();
-        const password = passwordInput.value.trim();
+        const password = passwordInput.value;
         
         const isUsernameValid = validateField(usernameInput, 'usernameError');
         const isPasswordValid = validateField(passwordInput, 'passwordError');
@@ -95,6 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok && result.success) {
+                if (result.token) {
+                    sessionStorage.setItem('idToken', result.token);
+                }
                 showToast(`Welcome back, ${result.user.username}! Login successful.`, 'success');
                 // Clear input fields
                 usernameInput.value = '';
@@ -118,41 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /* ==========================================
-       2. Mock Authentication & Loading States
-       ========================================== */
-    const startAuthentication = () => {
-        const username = usernameInput.value.trim();
-        const password = passwordInput.value.trim();
-
-        // Enter loading state
-        submitBtn.disabled = true;
-        submitBtn.classList.add('is-loading');
-        usernameInput.disabled = true;
-        passwordInput.disabled = true;
-        
-        // Simulate network latency (1.5 seconds)
-        setTimeout(() => {
-            // Exit loading state
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('is-loading');
-            usernameInput.disabled = false;
-            passwordInput.disabled = false;
-
-            // Trigger demo success/error cases based on inputs
-            if (username.toLowerCase() === 'error' || password.toLowerCase() === 'error') {
-                showToast('Authentication failed: Invalid credentials or account locked.', 'error');
-                loginCard.classList.add('shake');
-                setTimeout(() => loginCard.classList.remove('shake'), 400);
-            } else {
-                showToast(`Welcome back, ${username}! Login successful.`, 'success');
-                // Simulate redirect to academic dashboard after a successful login
-                setTimeout(() => {
-                    showDashboardSimulation(username);
-                }, 1000);
-            }
-        }, 1500);
-    };
+    /* Section 2 (startAuthentication) removed */
 
     /* ==========================================
        3. Toast Notification System
@@ -272,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast(`Recovery link successfully dispatched to ${email}`, 'success');
                 closeModal();
             }
-        });
+        }, { once: true });
     });
 
     /* ==========================================
@@ -282,6 +261,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = typeof user === 'object' ? user.username : user;
         const email = typeof user === 'object' ? user.email : `${username}@amrita.edu`;
         const role = typeof user === 'object' ? user.role : 'student';
+
+        // Sanitize outputs to prevent XSS
+        const safeUsername = escapeHTML(username);
+        const safeEmail = escapeHTML(email);
+        const safeRole = escapeHTML(role);
 
         // Create full overlay to simulate transition to internal campus system
         const dashboardOverlay = document.createElement('div');
@@ -304,10 +288,10 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardOverlay.innerHTML = `
             <div style="background: white; padding: 40px; border-radius: 12px; width: 90%; max-width: 550px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); text-align: center; animation: fadeInPage 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
                 <div style="width: 80px; height: 80px; background: #ECFDF5; color: #10B981; font-size: 2.5rem; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px;">✓</div>
-                <h2 style="color: #F59223; margin-bottom: 5px; font-weight: 600;">Welcome, ${username}!</h2>
+                <h2 style="color: #F59223; margin-bottom: 5px; font-weight: 600;">Welcome, ${safeUsername}!</h2>
                 <div style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-muted);">
-                    <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: ${role === 'admin' ? '#D97706' : '#0D9488'}; background-color: ${role === 'admin' ? '#FEF3C7' : '#CCFBF1'}; border: 1px solid ${role === 'admin' ? '#FCD34D' : '#99F6E4'};">${role}</span>
-                    <p style="margin-top: 8px; font-family: monospace;">${email}</p>
+                    <span style="background: #F1F5F9; padding: 4px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; color: ${safeRole === 'admin' ? '#D97706' : '#0D9488'}; background-color: ${safeRole === 'admin' ? '#FEF3C7' : '#CCFBF1'}; border: 1px solid ${safeRole === 'admin' ? '#FCD34D' : '#99F6E4'};">${safeRole}</span>
+                    <p style="margin-top: 8px; font-family: monospace;">${safeEmail}</p>
                 </div>
                 <p style="color: #64748B; margin-bottom: 25px; line-height: 1.6;">You have logged in securely to the <strong>Amrita University Academic Management System</strong> using **Firebase Authentication**. Your session is active and profile is registered in Cloud Firestore.</p>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -325,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             dashboardOverlay.style.opacity = '0';
+            sessionStorage.removeItem('idToken');
             setTimeout(() => {
                 dashboardOverlay.remove();
                 // Clear input fields on logout
@@ -340,15 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
        6. Secure Registered Users Console
        ========================================== */
     
-    // HTML sanitizer helper
-    const escapeHTML = (str) => {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    };
+    // escapeHTML function moved to top of DOMContentLoaded
 
     // Render registered users list (safe metadata only)
     const renderTableRows = (items) => {
@@ -475,7 +452,12 @@ document.addEventListener('DOMContentLoaded', () => {
             `, true);
 
             try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/users`);
+                const token = sessionStorage.getItem('idToken');
+                const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
                 const result = await response.json();
                 
                 if (response.ok && result.success) {

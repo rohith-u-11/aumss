@@ -1,13 +1,13 @@
 // Trigger Vercel rebuild to apply zero-config layout
+// Node 18+ is required as global fetch is used for Firebase Auth REST requests.
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const admin = require('firebase-admin');
 const fs = require('fs');
 
 // Load local .env file manually if running locally and file exists
 try {
-    const dotenvPath = path.join(__dirname, '..', '.env');
+    const dotenvPath = __dirname + '/../.env';
     if (fs.existsSync(dotenvPath)) {
         const envData = fs.readFileSync(dotenvPath, 'utf8');
         envData.split('\n').forEach(line => {
@@ -37,9 +37,6 @@ app.use(cors());
 
 // Parse JSON request bodies
 app.use(express.json());
-
-// Serve static frontend files from the parent (root) directory
-app.use(express.static(path.join(__dirname, '..')));
 
 let db = null;
 let isFirebaseConfigured = false;
@@ -73,7 +70,7 @@ async function secureUserProfile(uid, username, email) {
     const userRef = db.collection('users').doc(uid);
     const doc = await userRef.get();
     
-    const role = username.toLowerCase().includes('admin') ? 'admin' : 'student';
+    const role = 'student';
     
     const profile = {
         uid,
@@ -149,6 +146,7 @@ app.post('/api/login', async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Authentication successful.',
+            token: authData.idToken,
             user: {
                 uid,
                 username,
@@ -175,7 +173,28 @@ app.get('/api/admin/users', async (req, res) => {
         });
     }
 
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized: Missing or invalid token.'
+        });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+
     try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const uid = decodedToken.uid;
+
+        const userDoc = await db.collection('users').doc(uid).get();
+        if (!userDoc.exists || userDoc.data().role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Forbidden: Access is restricted to administrators only.'
+            });
+        }
+
         const snapshot = await db.collection('users').get();
         const usersList = [];
         snapshot.forEach(doc => {
@@ -198,7 +217,13 @@ app.get('/api/admin/users', async (req, res) => {
             data: usersList
         });
     } catch (err) {
-        console.error('[FIRESTORE ERROR] Failed to fetch users:', err.message);
+        console.error('[AUTH/FIRESTORE ERROR] Verification failed:', err.message);
+        if (err.code && err.code.startsWith('auth/')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Invalid or expired token.'
+            });
+        }
         return res.status(500).json({
             success: false,
             message: 'Failed to retrieve registered users from database.'
