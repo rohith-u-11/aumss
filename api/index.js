@@ -1,3 +1,4 @@
+// Trigger Vercel rebuild to apply zero-config layout
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
