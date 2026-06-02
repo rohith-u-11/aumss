@@ -8,16 +8,27 @@ const PORT = 3000;
 
 // Connect to MongoDB
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Chethan=MyPassword123@cluster0.fiyebyi.mongodb.net/aums?appName=Cluster0';
-mongoose.connect(MONGODB_URI)
-    .then(() => console.log('Connected to MongoDB Atlas successfully.'))
-    .catch(err => {
+const LOCAL_URI = 'mongodb://127.0.0.1:27017/aums';
+
+async function connectDB() {
+    try {
+        console.log('Connecting to MongoDB Atlas...');
+        await mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
+        console.log('Connected to MongoDB Atlas successfully.');
+    } catch (err) {
         console.error('MongoDB Atlas connection error:', err.message);
         console.log('Attempting local MongoDB fallback...');
-        const LOCAL_URI = 'mongodb://127.0.0.1:27017/aums';
-        mongoose.connect(LOCAL_URI)
-            .then(() => console.log('Connected to local fallback MongoDB successfully.'))
-            .catch(localErr => console.error('Local fallback MongoDB connection error:', localErr.message));
-    });
+        try {
+            await mongoose.disconnect();
+            await mongoose.connect(LOCAL_URI);
+            console.log('Connected to local fallback MongoDB successfully.');
+        } catch (localErr) {
+            console.error('Local fallback MongoDB connection error:', localErr.message);
+        }
+    }
+}
+
+connectDB();
 
 // Define Credential Schema & Model
 const CredentialSchema = new mongoose.Schema({
