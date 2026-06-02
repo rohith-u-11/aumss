@@ -10,16 +10,16 @@ try {
     if (fs.existsSync(dotenvPath)) {
         const envData = fs.readFileSync(dotenvPath, 'utf8');
         envData.split('\n').forEach(line => {
+            line = line.trim();
+            if (!line) return;
             const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
             if (match) {
                 const key = match[1];
-                let value = match[2] || '';
+                let value = (match[2] || '').trim();
                 // Remove surrounding quotes if present
                 if (value.length > 0 && (value.charAt(0) === '"' || value.charAt(0) === "'")) {
                     value = value.substring(1, value.length - 1);
                 }
-                // Unescape newlines
-                value = value.replace(/\\n/g, '\n');
                 process.env[key] = value;
             }
         });
