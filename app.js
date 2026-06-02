@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submitBtn');
     const loginCard = document.querySelector('.login-card');
     
+    // Global active user token storage
+    let currentUserToken = null;
+    
     // Interactive Links & Modals
     const opacLink = document.getElementById('opacLink');
     const forgotLink = document.getElementById('forgotLink');
@@ -105,9 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                if (result.token) {
-                    sessionStorage.setItem('idToken', result.token);
-                }
+                currentUserToken = result.idToken;
                 showToast(`Welcome back, ${result.user.username}! Login successful.`, 'success');
                 // Clear input fields
                 usernameInput.value = '';
@@ -254,6 +255,68 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { once: true });
     });
 
+    // Open Register modal
+    const registerLink = document.getElementById('registerLink');
+    if (registerLink) {
+        registerLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const registerHTML = `
+                <h3>Create Account</h3>
+                <p>Register a new user profile inside the Amrita University Management System.</p>
+                <form id="registerForm" style="margin-top: 15px;">
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <input type="text" id="regUsername" placeholder="Username" required style="width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 4px; font-family: inherit; font-size: 0.95rem; outline: none; background: #F8FAFC;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 15px;">
+                        <input type="password" id="regPassword" placeholder="Password" required style="width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 4px; font-family: inherit; font-size: 0.95rem; outline: none; background: #F8FAFC;">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 20px;">
+                        <input type="password" id="regConfirmPassword" placeholder="Confirm Password" required style="width: 100%; padding: 12px 14px; border: 1px solid #CBD5E1; border-radius: 4px; font-family: inherit; font-size: 0.95rem; outline: none; background: #F8FAFC;">
+                    </div>
+                    <button type="submit" class="modal-primary-btn" style="width: 100%;">Create Account</button>
+                </form>
+            `;
+            openModal(registerHTML);
+
+            // Handle register submission
+            const form = document.getElementById('registerForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('regUsername').value.trim();
+                const password = document.getElementById('regPassword').value;
+                const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+                if (password !== confirmPassword) {
+                    showToast('Passwords do not match.', 'error');
+                    return;
+                }
+
+                // Call register API
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        showToast('Account created successfully.', 'success');
+                        closeModal();
+                    } else {
+                        showToast(result.message || 'Registration failed.', 'error');
+                    }
+                } catch (err) {
+                    console.error('Registration network error:', err);
+                    showToast('Unable to connect to the registration server.', 'error');
+                }
+            }, { once: true });
+        });
+    }
+
     /* ==========================================
        5. Dashboard Simulation (Success Flow)
        ========================================== */
@@ -309,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             dashboardOverlay.style.opacity = '0';
-            sessionStorage.removeItem('idToken');
+            currentUserToken = null;
             setTimeout(() => {
                 dashboardOverlay.remove();
                 // Clear input fields on logout
@@ -438,6 +501,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoTrigger) {
         logoTrigger.addEventListener('click', async (e) => {
             e.preventDefault();
+            if (!currentUserToken) {
+                showToast("Please log in first to access the admin panel.", "error");
+                return;
+            }
             showToast('Loading system registry...', 'info');
             
             // Open loading modal immediately
@@ -452,10 +519,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `, true);
 
             try {
-                const token = sessionStorage.getItem('idToken');
                 const response = await fetch(`${API_BASE_URL}/api/admin/users`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${currentUserToken}`
                     }
                 });
                 const result = await response.json();

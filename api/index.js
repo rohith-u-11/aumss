@@ -146,13 +146,13 @@ app.post('/api/login', async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'Authentication successful.',
-            token: authData.idToken,
             user: {
                 uid,
                 username,
                 email,
                 role: userProfile?.role || 'student'
-            }
+            },
+            idToken: authData.idToken
         });
 
     } catch (err) {
@@ -160,6 +160,69 @@ app.post('/api/login', async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Server error authenticating credentials.'
+        });
+    }
+});
+
+// Registration API endpoint using Firebase Admin SDK
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Username and password are required.'
+        });
+    }
+
+    if (!isFirebaseConfigured || !db) {
+        return res.status(500).json({
+            success: false,
+            message: 'Firebase is not fully configured on the server. Please verify your environment variables.'
+        });
+    }
+
+    // Map username to a valid university email format if it is not already an email
+    const email = username.includes('@') ? username.trim() : `${username.trim()}@amrita.edu`;
+
+    try {
+        // Create user in Firebase Auth using the Admin SDK
+        const userRecord = await admin.auth().createUser({
+            email,
+            password
+        });
+
+        const uid = userRecord.uid;
+
+        // Create Firestore profile
+        const userRef = db.collection('users').doc(uid);
+        const profile = {
+            uid,
+            username: username.trim(),
+            email,
+            role: 'student',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+        };
+        await userRef.set(profile);
+
+        console.log(`[AUTH SUCCESS] User registered successfully: ${email}`);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Account created successfully.'
+        });
+    } catch (err) {
+        console.error('[API ERROR] Registration failed:', err.message);
+        if (err.code === 'auth/email-already-exists') {
+            return res.status(409).json({
+                success: false,
+                message: 'Registration failed: Email address already registered.'
+            });
+        }
+        return res.status(500).json({
+            success: false,
+            message: err.message || 'Server error creating account.'
         });
     }
 });
