@@ -313,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.error('Registration network error:', err);
                     showToast('Unable to connect to the registration server.', 'error');
                 }
-            }, { once: true });
+            });
         });
     }
 
